@@ -1,0 +1,89 @@
+image: docker:latest
+
+variables:
+  KUBERNETES_VERSION: 1.11.9
+  HELM_VERSION: 2.13.1
+  DOCKER_DRIVER: overlay2
+
+stages:
+  - build
+  - deploy-stg
+  - deploy-pro
+
+services:
+  - docker:dind
+
+build:
+  stage: build
+  script:
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+  only:
+    - develop
+
+
+deploy-stg:
+  stage: deploy-stg
+  script:
+    - install_dependencies
+    - helm upgrade --install ${CI_PROJECT_NAME}-stg --namespace staging --wait --set image.repository=${CI_REGISTRY_IMAGE} --set image.tag=${CI_COMMIT_SHA} helm/${CI_PROJECT_NAME}/
+  environment:
+    name: staging
+  only:
+    - develop
+
+deploy-production:
+  stage: deploy-pro
+  script:
+    - install_dependencies
+    - helm upgrade --install ${CI_PROJECT_NAME}-pro --namespace production --wait --set image.repository=${CI_REGISTRY_IMAGE} --set image.tag=${CI_COMMIT_SHA} helm/${CI_PROJECT_NAME}/ -f helm/${CI_PROJECT_NAME}/production-values.yaml
+  environment:
+    name: production
+  when: manual
+  only:
+    - develop
+
+
+
+.deploy_helpers: &deploy_helpers |
+  function install_dependencies() {
+
+    apk add -U openssl curl tar gzip bash ca-certificates git
+    curl -sSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+    curl -sSL -O https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.28-r0/glibc-2.28-r0.apk
+    apk add glibc-2.28-r0.apk
+    rm glibc-2.28-r0.apk
+
+    curl -sS "https://kubernetes-helm.storage.googleapis.com/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar zx
+    mv linux-amd64/helm /usr/bin/
+    mv linux-amd64/tiller /usr/bin/
+    helm version --client
+    tiller -version
+
+    curl -sSL -o /usr/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl"
+    chmod +x /usr/bin/kubectl
+    kubectl version --client
+
+    curl -sL https://github.com/digitalocean/doctl/releases/download/v1.15.0/doctl-1.15.0-linux-amd64.tar.gz | tar -xzv
+    mv doctl /usr/bin/
+    mkdir -p ~/.kube
+    doctl kubernetes cluster kubeconfig show ${CLUSTER_NAME} -t ${DO_TOKEN} > ~/.kube/config
+  }
+
+  function initialize_tiller() {
+    echo "Checking Tiller..."
+
+    export HELM_HOST="localhost:44134"
+    tiller -listen ${HELM_HOST} -alsologtostderr > /dev/null 2>&1 &
+    echo "Tiller is listening on ${HELM_HOST}"
+
+    if ! helm version --debug; then
+      echo "Failed to init Tiller."
+      return 1
+    fi
+    echo ""
+  }
+
+before_script:
+  - *deploy_helpers

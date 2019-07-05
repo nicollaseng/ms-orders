@@ -1,0 +1,54 @@
+# Default values for ms-orders.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+image:
+  repository: registy.btcbolsa.host
+  tag: dev
+  pullPolicy: IfNotPresent
+
+env:
+  REDIS_HOST: redis-stg-master
+
+envBySecret:
+  - name: REDIS_PASS
+    secret: redis-stg
+    key: redis-password
+
+envFromSecret:
+  - ms-common
+  - sendgrid
+
+apmEnable: false
+
+resources:
+  limits:
+    cpu: 800m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 90
+
+
+internalPort: 3000
+
+enableProbe: true
+probePath: /health
+livenessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+readinessProbe:
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+terminationGracePeriodSeconds: 10

@@ -1,0 +1,15 @@
+FROM node:10-alpine
+WORKDIR /app
+
+RUN apk update && apk add yarn git python g++ make && rm -rf /var/cache/apk/*
+
+RUN chown node /app
+USER node
+
+COPY ./package.json yarn.lock ./
+
+RUN yarn
+
+COPY . .
+
+CMD ["yarn", "start:dev"]
