@@ -29,7 +29,7 @@
     "@nestjs/typeorm": "^5.2.2",
     "@sentry/node": "5.1.0",
     "@types/redis": "^2.8.10",
-    "class-transformer": "^0.1.10",
+    "class-transformer": "^0.3.1",
     "class-validator": "^0.9.1",
     "currency-formatter": "^1.5.3",
     "dd-trace": "^0.10.2",
