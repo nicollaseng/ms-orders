@@ -42,7 +42,7 @@
     "nest-winston": "^1.0.2",
     "pg": "^7.11.0",
     "raven": "^2.6.4",
-    "redis": "^2.8.0",
+    "redis": "^3.1.1",
     "reflect-metadata": "^0.1.12",
     "rimraf": "^2.6.2",
     "rxjs": "^6.2.2",
