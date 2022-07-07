@@ -35,7 +35,7 @@
     "dd-trace": "^0.10.2",
     "elastic-apm-node": "^2.10.0",
     "mathjs": "^5.4.0",
-    "moment": "^2.22.2",
+    "moment": "^2.29.4",
     "mysql": "^2.16.0",
     "nats": "^1.0.1",
     "nest-raven": "^4.0.0",
